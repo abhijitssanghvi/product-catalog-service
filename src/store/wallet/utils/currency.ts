@@ -3,6 +3,7 @@ import {SupportedCoinsOptions} from '../../../constants/SupportedCurrencyOptions
 import {
   BitpaySupportedCoins,
   BitpaySupportedEvmCoins,
+  BitpaySupportedSvmCoins,
   BitpaySupportedTokens,
   BitpaySupportedUtxoCoins,
   OtherBitpaySupportedCoins,
@@ -77,10 +78,24 @@ export const IsOtherChain = (chain: string): boolean => {
   return Object.keys(OtherBitpaySupportedCoins).includes(_chain);
 };
 
+export const IsTokensSupportedChain = (chain: string): boolean => {
+  const _chain = cloneDeep(chain).toLowerCase();
+  return Object.keys(BitpaySupportedEvmCoins)
+    .concat(Object.keys(BitpaySupportedSvmCoins))
+    .includes(_chain); // TODO: review all IsEVMChain and see if we should use IsTokensSupportedChain or IsSVMChain
+};
+
 export const IsEVMChain = (chain: string): boolean => {
   const _chain = cloneDeep(chain).toLowerCase();
+  return Object.keys(BitpaySupportedEvmCoins)
+    .concat(Object.keys(BitpaySupportedSvmCoins))
+    .includes(_chain); // TODO: remove concat(Object.keys(BitpaySupportedSvmCoins))
+};
 
-  return Object.keys(BitpaySupportedEvmCoins).includes(_chain);
+export const IsSVMChain = (chain: string): boolean => {
+  const _chain = cloneDeep(chain).toLowerCase();
+
+  return Object.keys(BitpaySupportedSvmCoins).includes(_chain);
 };
 
 export const IsCustomERCToken = (
@@ -94,11 +109,12 @@ export const IsCustomERCToken = (
   return !BitpaySupportedTokens[tokenAddressWithSuffix.toLowerCase()];
 };
 
+// Logic for checking token standards like ERC20 or SLP - Let's keep the name for simplicity
 export const IsERCToken = (
   currencyAbbreviation: string,
   chain: string,
 ): boolean => {
-  const _currencyAbbreviation = currencyAbbreviation.toLowerCase();
+  const _currencyAbbreviation = cloneDeep(currencyAbbreviation)?.toLowerCase();
   const _chain = chain.toLowerCase();
 
   if (_currencyAbbreviation === 'pol' && _chain === 'matic') {

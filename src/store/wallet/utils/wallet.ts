@@ -24,6 +24,8 @@ import {
   GetProtocolPrefix,
   IsERCToken,
   IsEVMChain,
+  IsSVMChain,
+  IsTokensSupportedChain,
 } from './currency';
 import {
   addTokenChainSuffix,
@@ -62,6 +64,7 @@ import {
   AssetsByChainListProps,
 } from '../../../navigation/wallet/screens/AccountDetails';
 import uniqBy from 'lodash.uniqby';
+import cloneDeep from 'lodash.clonedeep';
 
 export const mapAbbreviationAndName =
   (
@@ -162,11 +165,8 @@ export const buildWalletObj = (
   let updatedCurrencyAbbreviation = currencyAbbreviation;
   // Only for USDC.e
   const usdcToken = '0x2791bca1f2de4661ed88a30c99a7a9449aa84174';
-  if (token && token.address.toLowerCase() === usdcToken) {
-    const tokenAddressSuffix = addTokenChainSuffix(
-      token.address.toLowerCase(),
-      chain,
-    );
+  if (token?.address && cloneDeep(token.address)?.toLowerCase() === usdcToken) {
+    const tokenAddressSuffix = addTokenChainSuffix(token.address, chain);
     updatedCurrencyAbbreviation =
       BitpaySupportedMaticTokens[tokenAddressSuffix].coin;
   }
@@ -177,10 +177,7 @@ export const buildWalletObj = (
 
   let foundToken;
   if (tokenOptsByAddress && token?.address) {
-    foundToken =
-      tokenOptsByAddress[
-        addTokenChainSuffix(token.address.toLowerCase(), chain)
-      ];
+    foundToken = tokenOptsByAddress[addTokenChainSuffix(token.address, chain)];
   }
 
   const currencyImg = CurrencyListIcons[_currencyAbbreviation]
@@ -193,7 +190,9 @@ export const buildWalletObj = (
     id: walletId,
     currencyName,
     currencyAbbreviation: updatedCurrencyAbbreviation,
-    tokenAddress: token?.address?.toLowerCase(),
+    tokenAddress: IsSVMChain(chain)
+      ? token?.address
+      : token?.address?.toLowerCase(),
     chain,
     chainName: BitpaySupportedCoins[chain].name,
     walletName,
@@ -1199,7 +1198,8 @@ export const buildAccountList = (
       accountKey = walletId;
     }
 
-    const isEVMChain = IsEVMChain(chain);
+    const isSVMChain = IsSVMChain(chain);
+    const isTokensSupportedChain = IsTokensSupportedChain(chain);
     const name = key.evmAccountsInfo?.[accountKey!]?.name;
     const existingAccount = accountMap[accountKey!];
     const hideAccount = key.evmAccountsInfo?.[accountKey!]?.hideAccount;
@@ -1213,13 +1213,16 @@ export const buildAccountList = (
         id: _.uniqueId('account_'),
         keyId,
         chains: [chain],
-        accountName: isEVMChain
-          ? name || `EVM Account${Number(account) === 0 ? '' : ` (${account})`}`
+        accountName: isTokensSupportedChain
+          ? name ||
+            `${isSVMChain ? 'Solana Account' : 'EVM Account'}${
+              Number(account) === 0 ? '' : ` (${account})`
+            }`
           : uiFormattedWallet.walletName,
         wallets: [uiFormattedWallet],
         accountNumber: account,
         receiveAddress,
-        isMultiNetworkSupported: isEVMChain,
+        isMultiNetworkSupported: IsTokensSupportedChain(chain),
         fiatBalance: uiFormattedWallet.fiatBalance ?? 0,
         fiatLockedBalance: uiFormattedWallet.fiatLockedBalance ?? 0,
         fiatConfirmedLockedBalance:
